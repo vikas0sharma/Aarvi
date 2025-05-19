@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Suppress specific warnings for all projects in the solution -->
+    <NoWarn>CA1416;SKEXP0001;SKEXP0110;SKEXP0010;SKEXP0020;SKEXP0050;SKEXP0060;OPENAI002;SKEXP0070</NoWarn>
+    <!-- Optional: Treat warnings as errors -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
