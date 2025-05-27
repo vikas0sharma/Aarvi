@@ -3,6 +3,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Services.MCPClients;
 using Microsoft.Extensions.Configuration;
+using A2A.Server.Infrastructure.Services;
+using A2A.Server;
+using A2A.Server.Infrastructure;
 
 namespace Services
 {
@@ -13,11 +16,11 @@ namespace Services
             // Add Google Gemini AI service
             services.AddGoogleAIGeminiChatCompletion("gemini-2.0-flash", configuration["GEMINI_KEY"]!);
             // Add MCP Tools
-            services.AddScoped<IMCPClientBuilder, YouTubeMusicClient>();
-            services.AddScoped<IMCPClientBuilder, SearchMCPClient>();
+            services.AddSingleton<IMCPClientBuilder, YouTubeMusicClient>();
+            services.AddSingleton<IMCPClientBuilder, SearchMCPClient>();
             services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
             // Add Semantic Kernel services
-            services.AddScoped(sp =>
+            services.AddSingleton(sp =>
             {
                 Kernel kernel = new(sp, []);
 
@@ -38,6 +41,15 @@ namespace Services
                 return kernel;
             });
 
+            services.AddDistributedMemoryCache();
+            services.AddSingleton<IAgentRuntime, AgentRuntime>();
+            services.AddA2AProtocolServer(builder =>
+            {
+                builder
+                    .UseAgentRuntime(provider => provider.GetRequiredService<IAgentRuntime>())
+                    .UseDistributedCacheTaskRepository()
+                    .SupportsStreaming();
+            });
         }
 
 

@@ -152,23 +152,23 @@
             font-style: italic;
         }
 
-        .typing-indicator .dot {
-            height: 8px;
-            width: 8px;
-            margin: 0 2px;
-            background-color: #2d6cdf;
-            border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite both;
-        }
+            .typing-indicator .dot {
+                height: 8px;
+                width: 8px;
+                margin: 0 2px;
+                background-color: #2d6cdf;
+                border-radius: 50%;
+                display: inline-block;
+                animation: bounce 1.4s infinite both;
+            }
 
-        .typing-indicator .dot:nth-child(2) {
-            animation-delay: .2s;
-        }
+                .typing-indicator .dot:nth-child(2) {
+                    animation-delay: .2s;
+                }
 
-        .typing-indicator .dot:nth-child(3) {
-            animation-delay: .4s;
-        }
+                .typing-indicator .dot:nth-child(3) {
+                    animation-delay: .4s;
+                }
 
         @keyframes bounce {
             0%, 80%, 100% {
@@ -179,6 +179,27 @@
                 transform: scale(1);
             }
         }
+
+        .voice-btn {
+            background: #fff;
+            color: #2d6cdf;
+            border: 1px solid #2d6cdf;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+            .voice-btn.recording {
+                background: #2d6cdf;
+                color: #fff;
+            }
     </style>
 </head>
 <body>
@@ -191,7 +212,8 @@
             <span class="dot"></span><span class="dot"></span><span class="dot"></span> AI is typing...
         </div>
         <form class="chat-input-row" id="chatForm" autocomplete="off">
-            <input class="chat-input" id="chatInput" type="text" placeholder="Type your message..." autofocus />
+            <button type="button" class="voice-btn" id="voiceBtn" title="Speak"><span id="micIcon">🎤</span></button>
+            <input class="chat-input" id="chatInput" type="text" placeholder="Type your message..." autocomplete="off" />
             <button class="send-btn" type="submit">Send</button>
         </form>
     </div>
@@ -202,9 +224,61 @@
         const chatMessages = document.getElementById('chatMessages');
         const chatForm = document.getElementById('chatForm');
         const chatInput = document.getElementById('chatInput');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const micIcon = document.getElementById('micIcon');
 
         let socket;
         let connected = false;
+        let recognizing = false;
+        let recognition;
+
+        // --- Browser Speech Recognition (Speech-to-Text) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                recognizing = true;
+                voiceBtn.classList.add('recording');
+                micIcon.textContent = "🔴";
+            };
+            recognition.onerror = (e) => {
+                recognizing = false;
+                voiceBtn.classList.remove('recording');
+                micIcon.textContent = "🎤";
+                alert("Voice recognition error: " + e.error);
+            };
+            recognition.onend = () => {
+                recognizing = false;
+                voiceBtn.classList.remove('recording');
+                micIcon.textContent = "🎤";
+            };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                chatInput.value = transcript;
+                chatInput.focus();
+                // Automatically send the recognized text to the server
+                if (transcript && connected) {
+                    appendMessage(transcript, 'user');
+                    showTyping();
+                    socket.send(transcript);
+                    chatInput.value = '';
+                }
+            };
+        } else {
+            voiceBtn.disabled = true;
+            voiceBtn.title = "Speech Recognition not supported in this browser.";
+        }
+
+        voiceBtn.onclick = () => {
+            if (recognition) {
+                if (!recognizing) recognition.start();
+                else recognition.stop();
+            }
+        };
 
         function showTyping() {
             document.getElementById('typingIndicator').style.display = 'flex';
@@ -235,6 +309,7 @@
         function setInputEnabled(enabled) {
             chatInput.disabled = !enabled;
             chatForm.querySelector('button[type="submit"]').disabled = !enabled;
+            voiceBtn.disabled = !enabled || !recognition;
         }
 
         function connectSocket() {
@@ -259,14 +334,15 @@
             };
 
             socket.onmessage = (event) => {
-                hideTyping(); // 
-                // You may want to parse JSON if your agent sends JSON
+                hideTyping();
                 let data = event.data;
                 try {
                     const parsed = JSON.parse(event.data);
                     data = parsed.text || event.data;
                 } catch { /* not JSON, use as is */ }
                 appendMessage(data, 'agent');
+                // --- Browser Speech Synthesis (Text-to-Speech) ---
+                speakText(data);
             };
         }
 
@@ -275,11 +351,52 @@
             const msg = chatInput.value.trim();
             if (!msg || !connected) return;
             appendMessage(msg, 'user');
-            showTyping(); // Show the loader as soon as a message is sent
+            showTyping();
             socket.send(msg);
             chatInput.value = '';
             chatInput.focus();
         });
+
+        // --- Browser Speech Synthesis (Text-to-Speech) with Female/Natural Voice ---
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            const synth = window.speechSynthesis;
+            let voices = synth.getVoices();
+
+            // Try to find a female, English voice
+            let femaleVoice = voices.find(v =>
+                v.lang.startsWith('en') && (
+                    v.name.toLowerCase().includes('female') ||
+                    v.name.toLowerCase().includes('woman') ||
+                    v.name.toLowerCase().includes('zira') || // MS Zira is female
+                    v.name.toLowerCase().includes('samantha') // macOS female
+                )
+            );
+            // Fallbacks
+            if (!femaleVoice) {
+                femaleVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('english'));
+            }
+            if (!femaleVoice) {
+                femaleVoice = voices.find(v => v.lang.startsWith('en'));
+            }
+            if (!femaleVoice) {
+                femaleVoice = voices[0];
+            }
+
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.voice = femaleVoice;
+            utter.pitch = 1.2; // Slightly higher for more natural sound
+            utter.rate = 1.05; // Slightly faster
+
+            synth.speak(utter);
+        }
+
+        // (Optional) Refresh voice list on some browsers
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = function () {
+                // No action needed, but ensures voices are loaded
+            };
+        }
 
         // Connect on load
         setInputEnabled(false);

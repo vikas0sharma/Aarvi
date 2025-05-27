@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.Google;
-using Microsoft.SemanticKernel.Connectors.HuggingFace;
 using ModelContextProtocol.Client;
 using System.Net.WebSockets;
 using System.Text;

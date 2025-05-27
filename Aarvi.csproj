@@ -8,9 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Orchestrator\**" />
     <Compile Remove="Services\**" />
+    <Content Remove="Orchestrator\**" />
     <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Orchestrator\**" />
     <EmbeddedResource Remove="Services\**" />
+    <None Remove="Orchestrator\**" />
     <None Remove="Services\**" />
   </ItemGroup>
 
