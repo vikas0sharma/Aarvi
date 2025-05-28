@@ -6,16 +6,17 @@ This workspace contains three main projects:
 - **Orchestrator**: Console orchestrator for agent chat that acts as an A2A client to connect to A2A server.
 
 ## Architecture: Agent-to-Agent (A2A) Protocol
+
+```mermaid
 sequenceDiagram
     participant AgentA
     participant AgentB
-
     AgentA->>AgentB: Request (via A2A Protocol)
     activate AgentB
     Note right of AgentB: AgentB processes request<br/>using its MCP Tools
     AgentB-->>AgentA: Response (via A2A Protocol)
     deactivate AgentB
-
+```
 ## Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - Google Gemini API Key
