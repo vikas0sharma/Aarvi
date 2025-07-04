@@ -37,8 +37,8 @@ You can also edit the secrets.json file directly if needed.
 ### 3. Build the Solutiondotnet build
 ### 4. Run the Projects
 
-#### Run the Web API (Aarvi): dotnet run --project Aarvi
-#### Run the Orchestrator Console: dotnet run --project Orchestrator
+#### Run the Web API (Aarvi): dotnet run --project Aarvi.csproj
+#### Run the Orchestrator Console: dotnet run --project Orchestrator.csproj
 ## Features
 - Real-time chat with Gemini via Web API and console.
 - YouTube Music integration (requires YouTube API key).
