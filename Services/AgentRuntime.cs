@@ -45,10 +45,10 @@ namespace Services
                 }
                 return cancellationTokenSource;
             });
-            if (!Sessions.TryGetValue(task.SessionId, out var session) || session == null)
+            if (!Sessions.TryGetValue(task.ContextId, out var session) || session == null)
             {
                 session = new ChatHistory();
-                Sessions.AddOrUpdate(task.SessionId, session, (id, existing) => existing);
+                Sessions.AddOrUpdate(task.ContextId, session, (id, existing) => existing);
             }
             session.AddUserMessage(task.Message.ToText() ?? string.Empty);
 
@@ -63,12 +63,12 @@ namespace Services
                 {
                     if (currentContent.Length > 0 && currentRole != null)
                     {
-                        yield return new AgentResponseContent(new Artifact
+                        yield return new MessageResponseContent(new Message
                         {
-                            Index = index++,
                             Metadata = metadata,
                             Parts = [new TextPart(currentContent.ToString())],
-                            LastChunk = true
+                            Role = "agent"
+
                         });
                         currentContent.Clear();
                         metadata = null;
@@ -83,12 +83,12 @@ namespace Services
                 }
                 if (next == null || (!string.IsNullOrWhiteSpace(next?.Role?.ToString()) && next?.Role?.ToString() != currentRole && currentContent.Length > 0 && currentRole != null))
                 {
-                    yield return new AgentResponseContent(new Artifact
+                    yield return new MessageResponseContent(new Message
                     {
-                        Index = index++,
                         Metadata = metadata,
                         Parts = [new TextPart(currentContent.ToString())],
-                        LastChunk = true
+                        Role = "agent"
+
                     });
                     currentContent.Clear();
                     metadata = null;

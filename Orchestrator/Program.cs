@@ -24,7 +24,7 @@ IKernelBuilder builder = Kernel.CreateBuilder()
     .AddGoogleAIGeminiChatCompletion("gemini-2.0-flash", configuration["GEMINI_KEY"]!);
 
 builder.Services.AddHttpClient();
-
+builder.Services.AddLogging(l => l.AddConsole().SetMinimumLevel(LogLevel.Trace));
 Kernel kernel = builder.Build();
 
 var server = new Uri("http://localhost:5183");
@@ -38,8 +38,8 @@ kernel.ImportPluginFromFunctions(agentName, [
     .. agent.Skills.Select(skill => {
         return kernel.CreateFunctionFromMethod(async (string prompt) => {
             var client = new A2AProtocolHttpClient(Options.Create(new A2AProtocolClientOptions { Endpoint = endpoint }), httpFactory.CreateClient(agent.Name));
-            var resp = await client.SendTaskAsync(new A2A.Requests.SendTaskRequest { Params = new() { Id = Guid.NewGuid().ToString(), SessionId= Guid.NewGuid().ToString(), Message = new Message { Role = A2A.MessageRole.User, Parts = [new TextPart(prompt)] } } }, default).ConfigureAwait(false);
-            return resp.Result!.Artifacts!.Last().Parts!.OfType<TextPart>().Last().Text;
+            var resp = await client.SendMessageAsync(new A2A.Requests.SendMessageRequest { Params = new SendMessageRequestParameters {  Message = new Message { Role = A2A.MessageRole.User, Parts = [new TextPart(prompt)] } } }, default).ConfigureAwait(false);
+            return ((TextPart)resp.Result?.Status?.Message?.Parts?.LastOrDefault()).Text ?? string.Empty;
         }, skill.Name, skill.Description, returnParameter: new() { Description = "Prompt response as a JSON object or array to be inferred upon.", ParameterType = typeof(string) });
     })
 ]);
@@ -58,7 +58,7 @@ ChatCompletionAgent chatCompletionAgent = new ChatCompletionAgent
 };
 
 bool isComplete = false;
-ChatHistoryAgentThread agentThread = new() { };
+//ChatHistoryAgentThread agentThread = new() { };
 AnsiConsole.Write(new Rule("Orchestrator Chat").RuleStyle("grey").Centered());
 do
 {
@@ -80,7 +80,7 @@ do
         .Spinner(Spinner.Known.Dots)
         .StartAsync("[yellow]Thinking...[/]", async ctx =>
         {
-            await foreach (var agentResponse in chatCompletionAgent.InvokeAsync(message, agentThread))
+            await foreach (var agentResponse in chatCompletionAgent.InvokeAsync(message))
             {
                 // Stop the status/spinner before writing output
                 ctx.Status("[yellow]Responding...[/]");

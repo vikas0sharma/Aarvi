@@ -43,7 +43,7 @@ namespace Services
                     jsonContentBuilder.AppendLine("```");
                     return jsonContentBuilder.ToString();
                 default:
-                    throw new NotSupportedException($"The specified part type '{part.Type ?? "None"}' is not supported");
+                    throw new NotSupportedException($"The specified part type '{part.Kind ?? "None"}' is not supported");
             }
         }
 

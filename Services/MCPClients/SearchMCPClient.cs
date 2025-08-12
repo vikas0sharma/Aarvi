@@ -12,7 +12,7 @@ namespace Services.MCPClients
             {
                 Endpoint = new("https://router.mcp.so/mcp/dp49w4mauy9dij"),
                 Name = "Search",
-                UseStreamableHttp = true
+                TransportMode = HttpTransportMode.StreamableHttp
             })).Result;
         }
 

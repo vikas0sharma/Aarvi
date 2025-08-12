@@ -17,7 +17,7 @@ namespace Services
             services.AddGoogleAIGeminiChatCompletion("gemini-2.0-flash", configuration["GEMINI_KEY"]!);
             // Add MCP Tools
             services.AddSingleton<IMCPClientBuilder, YouTubeMusicClient>();
-            services.AddSingleton<IMCPClientBuilder, SearchMCPClient>();
+            //services.AddSingleton<IMCPClientBuilder, SearchMCPClient>();
             services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
             // Add Semantic Kernel services
             services.AddSingleton(sp =>
